@@ -117,6 +117,8 @@ class FlowExecution:
         '''
         while True:
             result = self.get_flow_exec_info()
+            print('dddddddd')
+            print(result)
             self.refresh_flow_execution()
             start_time = result['startTime']
             start_time /= 1000
@@ -160,7 +162,7 @@ class FlowExecution:
         resp = requests.get(target, cookies=self.cookies_fetcher.get_cookies())
         return json.loads(resp.content)
 
-    def cancel(self, cookies):
+    def cancel(self):
         target = '%s/executor?ajax=cancelFlow&execid=%s' % (host, self.exec_id)
         resp = requests.get(target, cookies=self.cookies_fetcher.get_cookies())
         if resp.getcode() != 200:
