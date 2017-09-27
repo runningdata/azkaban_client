@@ -78,6 +78,7 @@ class Flow:
         Execute specified flow.
         :return: Running flow execution id
         '''
+        print('going to execute flow {flow}'.format(flow=self.flowId))
         flows_resp = requests.get(
             'http://10.2.19.62:8081/executor?ajax=executeFlow&project={project}&flow={flow}'.format(
                 project=self.project,
@@ -116,9 +117,8 @@ class FlowExecution:
         :return:
         '''
         while True:
+            print('checking to execute flow {flow}, {exec_id}'.format(flow=self.flowId, exec_id=self.exec_id))
             result = self.get_flow_exec_info()
-            print('dddddddd')
-            print(result)
             self.refresh_flow_execution()
             start_time = result['startTime']
             start_time /= 1000
@@ -131,11 +131,13 @@ class FlowExecution:
             elif result['status'] == 'FAILED':
                 print("{execid} has been FAILED.".format(execid=self.exec_id))
                 break
-            if int(time.time()) - start_time > 60 * self.flow_timeout and result['endTime'] == -1:
-                print('reached timeout threshold \n')
-                self.cancel()
-                time.sleep(60)
-                self.resume_flow(result['project'], result['flow'])
+            else:
+                if start_time > 0 and int(time.time()) - start_time > 60 * self.flow_timeout and result[
+                    'endTime'] == -1:
+                    print('reached timeout threshold \n')
+                    self.cancel()
+                    time.sleep(60)
+                    self.resume_flow(result['project'], result['flow'])
             time.sleep(60 * 10 * 1000)
 
     def refresh_flow_execution(self):
