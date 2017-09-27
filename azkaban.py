@@ -1,77 +1,76 @@
-import urllib2, json, urllib, time
 import requests
 import json
+
 from utils import *
 
 user = 'azkaban'
 pwd = '15yinker@bj'
 host = 'http://10.2.19.62:8081'
 
-
 class CookiesFetcher:
     def __init__(self, user, pwd):
         self.login_data = {'action': 'login', 'username': user, 'password': pwd}
-        resp = requests.post("http://10.2.19.62:8081", data=self.login_data)
+        resp = requests.post("{host}", data=self.login_data)
         self.cookies = resp.cookies
 
     def get_cookies(self):
         return self.cookies
 
     def refresh(self):
-        resp = requests.post("http://10.2.19.62:8081", data=self.login_data)
+        resp = requests.post("{host}", data=self.login_data)
         self.cookies = resp.cookies
         return self.cookies
 
 
 class Project:
     def __init__(self, project, description, cookies_fetcher):
-        self.project = project
+        self.name = project
         self.description = description
         self.cookies_fetcher = cookies_fetcher
 
     def create_prj(self):
         create_data = {
-            'name': self.project,
+            'name': self.name,
             'description': self.description
         }
-        resp = requests.post("http://10.2.19.62:8081/manager?action=create", data=create_data,
+        resp = requests.post("{host}/manager?action=create".format(host=host), data=create_data,
                              cookies=self.cookies_fetcher.get_cookies())
         if resp.status_code != 200:
-            raise Exception('Error happened when creating project {project} to azkaban'.format(project=self.project))
-        print 'project {project} creatd : {status}'.format(project=self.project,
+            raise Exception('Error happened when creating project {project} to azkaban'.format(project=self.name))
+        print 'project {project} creatd : {status}'.format(project=self.name,
                                                            status=json.loads(resp.content)['status'])
         return self
 
     def upload_zip(self, zipfile):
         files = {'file': ('xxx.ip', open(zipfile, 'rb'), 'application/zip')}
         upload_data = {
-            'project': self.project,
+            'project': self.name,
             'ajax': 'upload',
 
         }
-        resp = requests.post("http://10.2.19.62:8081/manager", data=upload_data,
+        resp = requests.post("{host}/manager".format(host=host), data=upload_data,
                              cookies=self.cookies_fetcher.get_cookies(),
                              files=files)
         if resp.status_code != 200:
             raise Exception('Error happened when upload flow {flow_name} to azkaban'.format(flow_name=zipfile))
-        print self.project
+        print self.name
 
     def fetch_flow(self):
         flows_resp = requests.get(
-            'http://10.2.19.62:8081/manager?ajax=fetchprojectflows&project={project}'.format(project=self.project),
+            '{host}/manager?ajax=fetchprojectflows&project={project}'.format(host=host, project=self.name),
             cookies=self.cookies_fetcher.get_cookies())
         if flows_resp.status_code != 200:
-            raise Exception('Error happened when fetch flow from {project} in azkaban'.format(project=self.project))
+            raise Exception('Error happened when fetch flow from {project} in azkaban'.format(project=self.name))
         flows = json.loads(flows_resp.content)['flows']
         for flow in flows:
-            yield Flow(self.project, flow['flowId'], self.cookies_fetcher)
+            yield Flow(self.name, flow['flowId'], self.cookies_fetcher)
 
 
 class Flow:
-    def __init__(self, project, flowId, cookies_fetcher):
-        self.project = project
-        self.flowId = flowId
+    def __init__(self, prj_name, flowId, cookies_fetcher):
+        self.prj_name = prj_name
         self.cookies_fetcher = cookies_fetcher
+        self.flowId = flowId
 
     def execute(self):
         '''
@@ -80,29 +79,30 @@ class Flow:
         '''
         print('going to execute flow {flow}'.format(flow=self.flowId))
         flows_resp = requests.get(
-            'http://10.2.19.62:8081/executor?ajax=executeFlow&project={project}&flow={flow}'.format(
-                project=self.project,
+            '{host}/executor?ajax=executeFlow&project={project}&flow={flow}'.format(
+                host=host,
+                project=self.project.name,
                 flow=self.flowId),
             cookies=self.cookies_fetcher.get_cookies())
         if flows_resp.status_code != 200:
             raise Exception('Error happened when fetch flow from {flow} in azkaban'.format(flow=self.flowId))
         exec_id = json.loads(flows_resp.content)['execid']
-        return FlowExecution(self.project, self.flowId, exec_id, self.cookies_fetcher)
+        return FlowExecution(self.prj_name, self.flowId, exec_id, self.cookies_fetcher)
 
 
 class FlowExecution:
     job_status_dict = dict()
     flow_timeout = 180
 
-    def __init__(self, project, flowId, exec_id, cookies_fetcher):
-        self.project = project
+    def __init__(self, prj_name, flowId, exec_id, cookies_fetcher):
+        self.prj_name = prj_name
         self.flowId = flowId
         self.exec_id = exec_id
         self.cookies_fetcher = cookies_fetcher
 
     def resume_flow(self):
         target = '%s/executor?ajax=executeFlow&project=%s&flow=%s&disabled=%s' % (
-            host, self.project, self.flowId, get_str_set(self.job_status_dict.get('SUCCEEDED', set())))
+            host, self.prj_name.name, self.flowId, get_str_set(self.job_status_dict.get('SUCCEEDED', set())))
         resp = requests.get(target, cookies=self.cookies_fetcher.get_cookies())
         contents = resp.content
         new_exec_id = json.loads(contents)['execid']
@@ -132,8 +132,8 @@ class FlowExecution:
                 print("{execid} has been FAILED.".format(execid=self.exec_id))
                 break
             else:
-                if start_time > 0 and int(time.time()) - start_time > 60 * self.flow_timeout and result[
-                    'endTime'] == -1:
+                if start_time > 0 and int(time.time()) - start_time > 60 * self.flow_timeout \
+                        and result['endTime'] == -1:
                     print('reached timeout threshold \n')
                     self.cancel()
                     time.sleep(60)
