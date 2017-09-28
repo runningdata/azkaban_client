@@ -4,18 +4,19 @@ import json
 from utils import *
 
 host = 'http://10.2.19.62:8081'
+check_interval = 10 * 60
 
 class CookiesFetcher:
     def __init__(self, user, pwd):
         self.login_data = {'action': 'login', 'username': user, 'password': pwd}
-        resp = requests.post("{host}", data=self.login_data)
+        resp = requests.post("{host}".format(host=host), data=self.login_data)
         self.cookies = resp.cookies
 
     def get_cookies(self):
         return self.cookies
 
     def refresh(self):
-        resp = requests.post("{host}", data=self.login_data)
+        resp = requests.post("{host}".format(host=host), data=self.login_data)
         self.cookies = resp.cookies
         return self.cookies
 
@@ -79,7 +80,7 @@ class Flow:
         flows_resp = requests.get(
             '{host}/executor?ajax=executeFlow&project={project}&flow={flow}'.format(
                 host=host,
-                project=self.project.name,
+                project=self.prj_name,
                 flow=self.flowId),
             cookies=self.cookies_fetcher.get_cookies())
         if flows_resp.status_code != 200:
@@ -136,7 +137,7 @@ class FlowExecution:
                     self.cancel()
                     time.sleep(60)
                     self.resume_flow(result['project'], result['flow'])
-            time.sleep(60 * 10 * 1000)
+            time.sleep(check_interval)
 
     def refresh_flow_execution(self):
         '''
