@@ -3,8 +3,6 @@ import json
 
 from utils import *
 
-user = 'azkaban'
-pwd = '15yinker@bj'
 host = 'http://10.2.19.62:8081'
 
 class CookiesFetcher:
