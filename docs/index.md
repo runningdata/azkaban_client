@@ -1,8 +1,3 @@
-# azkaban_client
-client based on restful API
-
-
-
 
 #### Create a project
 
