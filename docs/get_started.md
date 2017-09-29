@@ -5,9 +5,8 @@
 
 
 user = 'azkaban'
-pwd = '15yinker@bj'
+pwd = 'azkaban'
 host = 'http://10.2.19.62:8081'
-metamap_host='10.2.19.62:8888'
 import urllib2,json, urllib
 
 from azkaban_client.azkaban import *
