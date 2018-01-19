@@ -6,6 +6,8 @@ from utils import *
 host = 'http://10.2.19.62:8081'
 check_interval = 10 * 60
 
+
+
 class CookiesFetcher:
     def __init__(self, user, pwd):
         self.login_data = {'action': 'login', 'username': user, 'password': pwd}
@@ -136,7 +138,7 @@ class FlowExecution:
                     print('reached timeout threshold \n')
                     self.cancel()
                     time.sleep(60)
-                    self.resume_flow(result['project'], result['flow'])
+                    self.resume_flow()
             time.sleep(check_interval)
 
     def refresh_flow_execution(self):

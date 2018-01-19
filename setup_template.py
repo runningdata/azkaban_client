@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='azkaban_client',
-      version='0.0.7',
+      version='0.0.{current_version}',
       description='azkaban_client based on azkaban restful apis',
       classifiers=[
           'Development Status :: 3 - Alpha',
