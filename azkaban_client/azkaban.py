@@ -1,9 +1,9 @@
 import requests
-import json
+import json, os
 
 from utils import *
 
-host = 'http://10.2.19.62:8081'
+host = os.getenv('AZKABAN_HOST', 'http://10.2.19.62:8081')
 check_interval = 10 * 60
 
 
